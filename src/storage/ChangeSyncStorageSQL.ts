@@ -37,7 +37,7 @@ export class ChangeSyncStorageSQL<DataType> extends ChangeSyncStorage<DataType> 
         await this.sqlStorage.executeQuery('INSERT INTO changelog (type, change_type, data) VALUES (?, ?, ?)', [
             changeSyncType,
             changeType,
-            data
+            JSON.stringify(data)
         ]);
     }
 
@@ -45,7 +45,7 @@ export class ChangeSyncStorageSQL<DataType> extends ChangeSyncStorage<DataType> 
         changeSyncType: string,
         changeList: { changeType: ChangeType; data: DataType }[]
     ): Promise<void> {
-        const sqlData = changeList.map((e) => [changeSyncType, e.changeType, e.data]);
+        const sqlData = changeList.map((e) => [changeSyncType, e.changeType, JSON.stringify(e.data)]);
 
         await this.sqlStorage.executeQuery<void>('INSERT INTO changelog (type, change_type, data) VALUES ?', [sqlData]);
     }
