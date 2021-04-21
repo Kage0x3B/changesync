@@ -22,8 +22,8 @@ const defaultOptions: Partial<ChangeSyncReceiverOptions> = {
 export type ChangeResult<DataType> = number | { status: number; data: DataType };
 
 export abstract class ChangeSyncReceiver<DataType> {
-    private readonly type: string;
-    private readonly logger: Logger;
+    protected readonly type: string;
+    protected readonly logger: Logger;
 
     public constructor(options: ChangeSyncReceiverOptions) {
         options = {
