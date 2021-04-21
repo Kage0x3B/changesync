@@ -62,7 +62,7 @@ export class ChangeSyncStorageSQL<DataType> extends ChangeSyncStorage<DataType> 
             await this.sqlStorage.executeQuery('UPDATE changelog SET received = TRUE WHERE id IN ?', [[idList]]);
         } else {
             await this.sqlStorage.executeQuery('UPDATE changelog SET resend_count = resend_count + 1 WHERE id IN ?', [
-                idList
+                [idList]
             ]);
         }
     }
