@@ -59,7 +59,7 @@ export class ChangeSyncStorageSQL<DataType> extends ChangeSyncStorage<DataType> 
 
     async saveChangeResults(changeSyncType: string, result: ChangeResultState, idList: number[]): Promise<void> {
         if (result == ChangeResultState.SUCCESSFUL) {
-            await this.sqlStorage.executeQuery('UPDATE changelog SET received = TRUE WHERE id IN ?', [idList]);
+            await this.sqlStorage.executeQuery('UPDATE changelog SET received = TRUE WHERE id IN ?', [[idList]]);
         } else {
             await this.sqlStorage.executeQuery('UPDATE changelog SET resend_count = resend_count + 1 WHERE id IN ?', [
                 idList
