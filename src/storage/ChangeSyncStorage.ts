@@ -5,7 +5,7 @@ export type StoredChangeEntry = ChangeEntry & {
     id: number;
 };
 
-export enum ChangeResult {
+export enum ChangeResultState {
     SUCCESSFUL,
     FAILED
 }
@@ -30,5 +30,9 @@ export abstract class ChangeSyncStorage {
 
     public abstract getPendingChanges(changeSyncType: string): Promise<StoredChangeEntry[]>;
 
-    public abstract saveChangeResults(changeSyncType: string, result: ChangeResult, idList: number[]): Promise<void>;
+    public abstract saveChangeResults(
+        changeSyncType: string,
+        result: ChangeResultState,
+        idList: number[]
+    ): Promise<void>;
 }

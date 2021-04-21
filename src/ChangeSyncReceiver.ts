@@ -1,6 +1,6 @@
 import { ConsoleLogger, Logger } from './Logger';
 import { Request, Response, Router } from 'express';
-import { StoredChangeEntry } from './storage/ChangeSyncStorage';
+import { StoredChangeEntry } from './storage';
 import { ChangeType } from './ChangeType';
 
 export type ChangeSyncReceiverOptions = {
@@ -19,7 +19,7 @@ const defaultOptions: Partial<ChangeSyncReceiverOptions> = {
     logger: new ConsoleLogger()
 };
 
-type ChangeResult = number | { status: number; data: unknown };
+export type ChangeResult = number | { status: number; data: unknown };
 
 export abstract class ChangeSyncReceiver {
     private readonly type: string;

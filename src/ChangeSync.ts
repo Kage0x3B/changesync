@@ -1,6 +1,6 @@
 import { ConsoleLogger, Logger } from './Logger';
 import { ChangeType } from './ChangeType';
-import { ChangeResult, ChangeSyncStorage, StoredChangeEntry } from './storage/ChangeSyncStorage';
+import { ChangeResultState, ChangeSyncStorage, StoredChangeEntry } from './storage/ChangeSyncStorage';
 import { StatusResponse } from './ChangeSyncReceiver';
 
 const changeTypes = ['create', 'update', 'delete'];
@@ -101,11 +101,11 @@ export class ChangeSync {
             const failedIds = syncResults.filter((r) => r.status >= 300).map((r) => r.id);
 
             if (successfulIds.length) {
-                await this.syncStorage.saveChangeResults(this.type, ChangeResult.SUCCESSFUL, successfulIds);
+                await this.syncStorage.saveChangeResults(this.type, ChangeResultState.SUCCESSFUL, successfulIds);
             }
 
             if (failedIds.length) {
-                await this.syncStorage.saveChangeResults(this.type, ChangeResult.FAILED, successfulIds);
+                await this.syncStorage.saveChangeResults(this.type, ChangeResultState.FAILED, successfulIds);
             }
         }
     }
