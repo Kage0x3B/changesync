@@ -86,16 +86,19 @@ export abstract class ChangeSyncReceiver<DataType> {
             }
 
             if (status >= 300) {
-                const loggingFunction = status >= 500 ? this.logger.error : this.logger.warn;
+                const logMessage =
+                    (status === 500 ? 'Unexpected ' : '') + 'error in change sync "' + this.type + '" handler';
+                const logData = {
+                    id,
+                    data,
+                    ...error
+                };
 
-                loggingFunction(
-                    (status === 500 ? 'Unexpected ' : '') + 'error in change sync "' + this.type + '" handler',
-                    {
-                        id,
-                        data,
-                        ...error
-                    }
-                );
+                if (status >= 500) {
+                    this.logger.error(logMessage, logData);
+                } else {
+                    this.logger.warn(logMessage, logData);
+                }
             }
 
             statusResponse.push({
