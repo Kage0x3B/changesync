@@ -39,11 +39,11 @@ export abstract class ChangeSyncReceiver<DataType> {
         router.post(`/${this.type}`, this.middleware.bind(this));
     }
 
-    abstract create(data: StoredChangeEntry<DataType>, request: Request): Promise<ChangeResult<DataType>>;
+    protected abstract create(data: StoredChangeEntry<DataType>, request: Request): Promise<ChangeResult<DataType>>;
 
-    abstract update(data: StoredChangeEntry<DataType>, request: Request): Promise<ChangeResult<DataType>>;
+    protected abstract update(data: StoredChangeEntry<DataType>, request: Request): Promise<ChangeResult<DataType>>;
 
-    abstract delete(data: StoredChangeEntry<DataType>, request: Request): Promise<ChangeResult<DataType>>;
+    protected abstract delete(data: StoredChangeEntry<DataType>, request: Request): Promise<ChangeResult<DataType>>;
 
     private async middleware(req: Request, res: Response): Promise<any> {
         if (!req.body || !req.body.length) {
