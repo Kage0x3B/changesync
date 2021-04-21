@@ -5,7 +5,7 @@ export interface SQLStorage {
     executeQuery<ResultType>(query: string, values?: any[]): Promise<ResultType[]>;
 }
 
-export class ChangeSyncStorageSQL extends ChangeSyncStorage {
+export class ChangeSyncStorageSQL<DataType> extends ChangeSyncStorage<DataType> {
     private sqlStorage: SQLStorage;
 
     constructor(sqlStorage: SQLStorage) {
@@ -33,7 +33,7 @@ export class ChangeSyncStorageSQL extends ChangeSyncStorage {
         );
     }
 
-    async addChange(changeSyncType: string, changeType: ChangeType, data: Record<string, unknown>): Promise<void> {
+    async addChange(changeSyncType: string, changeType: ChangeType, data: DataType): Promise<void> {
         await this.sqlStorage.executeQuery('INSERT INTO changelog (type, change_type, data) VALUES (?, ?, ?)', [
             changeSyncType,
             changeType,
@@ -43,14 +43,14 @@ export class ChangeSyncStorageSQL extends ChangeSyncStorage {
 
     async batchAddChange(
         changeSyncType: string,
-        changeList: { changeType: ChangeType; data: Record<string, unknown> }[]
+        changeList: { changeType: ChangeType; data: DataType }[]
     ): Promise<void> {
         const sqlData = changeList.map((e) => [changeSyncType, e.changeType, e.data]);
 
         await this.sqlStorage.executeQuery<void>('INSERT INTO changelog (type, change_type, data) VALUES ?', [sqlData]);
     }
 
-    async getPendingChanges(changeSyncType: string): Promise<StoredChangeEntry[]> {
+    async getPendingChanges(changeSyncType: string): Promise<StoredChangeEntry<DataType>[]> {
         return await this.sqlStorage.executeQuery(
             'SELECT id, change_type AS changeType, data FROM changelog WHERE type = ? AND received = FALSE AND resend_count < 5 ORDER BY created',
             [changeSyncType]

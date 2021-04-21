@@ -1,36 +1,36 @@
 import { ConsoleLogger, Logger } from './Logger';
 import { ChangeType } from './ChangeType';
-import { ChangeResultState, ChangeSyncStorage, StoredChangeEntry } from './storage/ChangeSyncStorage';
+import { ChangeResultState, ChangeSyncStorage, StoredChangeEntry } from './storage';
 import { StatusResponse } from './ChangeSyncReceiver';
 
 const changeTypes = ['create', 'update', 'delete'];
 
-export type ChangeSyncOptions = {
+export type ChangeSyncOptions<DataType> = {
     type: string;
-    apiFunction: (data: StoredChangeEntry[]) => Promise<StatusResponse>;
-    syncCallback?: (syncResponse: StatusResponse) => void;
+    apiFunction: (data: StoredChangeEntry<DataType>[]) => Promise<StatusResponse<DataType>>;
+    syncCallback?: (syncResponse: StatusResponse<DataType>) => void;
     logger?: Logger;
-    syncStorage: ChangeSyncStorage;
+    syncStorage: ChangeSyncStorage<DataType>;
 };
 
-const defaultOptions: Partial<ChangeSyncOptions> = {
+const defaultOptions: Partial<ChangeSyncOptions<unknown>> = {
     syncCallback: () => {},
     logger: new ConsoleLogger()
 };
 
-export type ChangeEntry = {
+export type ChangeEntry<DataType> = {
     changeType: ChangeType;
-    data: Record<string, unknown>;
+    data: DataType;
 };
 
-export class ChangeSync {
+export class ChangeSync<DataType> {
     private readonly type: string;
-    private readonly apiFunction: (data: StoredChangeEntry[]) => Promise<StatusResponse>;
-    private readonly syncCallback: (syncResponse: StatusResponse) => void;
-    private readonly syncStorage: ChangeSyncStorage;
+    private readonly apiFunction: (data: StoredChangeEntry<DataType>[]) => Promise<StatusResponse<DataType>>;
+    private readonly syncCallback: (syncResponse: StatusResponse<DataType>) => void;
+    private readonly syncStorage: ChangeSyncStorage<DataType>;
     private readonly logger: Logger;
 
-    public constructor(options: ChangeSyncOptions) {
+    public constructor(options: ChangeSyncOptions<DataType>) {
         options = {
             ...defaultOptions,
             ...options
@@ -47,7 +47,7 @@ export class ChangeSync {
         await this.syncStorage.initStorage();
     }
 
-    async addChange(changeType: ChangeType, data: Record<string, unknown>): Promise<void> {
+    async addChange(changeType: ChangeType, data: DataType): Promise<void> {
         await this.syncStorage.addChange(this.type, changeType, data);
 
         await this.syncChanges();
@@ -59,7 +59,7 @@ export class ChangeSync {
      * @param entries an array with entries, each an object having a changeType and data
      * @return {Promise<void>}
      */
-    async batchAddChange(entries: ChangeEntry[]): Promise<void> {
+    async batchAddChange(entries: ChangeEntry<DataType>[]): Promise<void> {
         for (let i = 0; i < entries.length; i++) {
             if (!entries[i].changeType || !changeTypes.includes(entries[i].changeType)) {
                 throw new Error('changeType has to be create, update or delete');
@@ -76,10 +76,10 @@ export class ChangeSync {
     }
 
     async syncChanges(): Promise<void> {
-        const syncData = await this.syncStorage.getPendingChanges(this.type);
+        const syncData = (await this.syncStorage.getPendingChanges(this.type)) as StoredChangeEntry<DataType>[];
 
         if (syncData.length) {
-            let syncResults: StatusResponse;
+            let syncResults: StatusResponse<DataType>;
 
             try {
                 syncResults = await this.apiFunction(syncData);

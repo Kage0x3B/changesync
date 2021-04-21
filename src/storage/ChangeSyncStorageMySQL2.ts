@@ -15,7 +15,7 @@ class MySQL2Storage implements SQLStorage {
     }
 }
 
-export class ChangeSyncStorageMySQL2 extends ChangeSyncStorageSQL {
+export class ChangeSyncStorageMySQL2<DataType> extends ChangeSyncStorageSQL<DataType> {
     public constructor(connection: Connection) {
         super(new MySQL2Storage(connection));
     }

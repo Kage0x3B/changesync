@@ -8,20 +8,20 @@ export type ChangeSyncReceiverOptions = {
     logger?: Logger;
 };
 
-export type StatusResponse = {
+export type StatusResponse<DataType> = {
     id: number;
     status: number;
     responseData: unknown;
-    data: unknown;
+    data: DataType;
 }[];
 
 const defaultOptions: Partial<ChangeSyncReceiverOptions> = {
     logger: new ConsoleLogger()
 };
 
-export type ChangeResult = number | { status: number; data: unknown };
+export type ChangeResult<DataType> = number | { status: number; data: DataType };
 
-export abstract class ChangeSyncReceiver {
+export abstract class ChangeSyncReceiver<DataType> {
     private readonly type: string;
     private readonly logger: Logger;
 
@@ -39,18 +39,18 @@ export abstract class ChangeSyncReceiver {
         router.post(`/${this.type}`, this.middleware.bind(this));
     }
 
-    abstract create(data: StoredChangeEntry, request: Request): Promise<ChangeResult>;
+    abstract create(data: StoredChangeEntry<DataType>, request: Request): Promise<ChangeResult<DataType>>;
 
-    abstract update(data: StoredChangeEntry, request: Request): Promise<ChangeResult>;
+    abstract update(data: StoredChangeEntry<DataType>, request: Request): Promise<ChangeResult<DataType>>;
 
-    abstract delete(data: StoredChangeEntry, request: Request): Promise<ChangeResult>;
+    abstract delete(data: StoredChangeEntry<DataType>, request: Request): Promise<ChangeResult<DataType>>;
 
     private async middleware(req: Request, res: Response): Promise<any> {
         if (!req.body || !req.body.length) {
             return res.status(400).json({ message: 'Invalid request body, not a json-formatted array or empty' });
         }
 
-        const statusResponse: StatusResponse = [];
+        const statusResponse: StatusResponse<DataType> = [];
 
         for (let i = 0; i < req.body.length; i++) {
             const data = req.body[i];
@@ -62,7 +62,7 @@ export abstract class ChangeSyncReceiver {
             let error: Error | null = null;
 
             try {
-                let result: ChangeResult;
+                let result: ChangeResult<DataType>;
 
                 if (changeType === ChangeType.CREATE) {
                     result = await this.create(data, req);
