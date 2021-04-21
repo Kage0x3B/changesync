@@ -1,13 +1,18 @@
 {
     "name": "changesync",
     "version": "1.0.0",
-    "description": "",
+    "description": "Safely synchronize data between microservices with data resending",
     "author": {
         "name": "Moritz Hein",
         "email": "moritz@flowluap.com",
         "url": "https://moritz-hein.de"
     },
-    "repository": "https://github.com/Kage0x3B/changesync",
+    "main": "lib/index.js",
+    "types": "lib/index.d.ts",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Kage0x3B/changesync.git"
+    },
     "license": "MIT",
     "scripts": {
         "watch": "tsc --watch",
