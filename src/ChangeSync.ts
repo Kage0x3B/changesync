@@ -105,7 +105,7 @@ export class ChangeSync<DataType> {
             }
 
             if (failedIds.length) {
-                await this.syncStorage.saveChangeResults(this.type, ChangeResultState.FAILED, successfulIds);
+                await this.syncStorage.saveChangeResults(this.type, ChangeResultState.FAILED, failedIds);
             }
         }
     }
