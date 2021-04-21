@@ -106,7 +106,7 @@ export abstract class ChangeSyncReceiver<DataType> {
             });
         }
 
-        this.logger.info(this.type + ' change sync: ' + req.body.data.length + ' items');
+        this.logger.info(this.type + ' change sync: ' + req.body.length + ' items');
 
         res.json(statusResponse);
     }
