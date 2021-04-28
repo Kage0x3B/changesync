@@ -1,20 +1,27 @@
 import { ChangeResultState, ChangeSyncStorage, StoredChangeEntry } from './ChangeSyncStorage';
 import { ChangeType } from '../ChangeType';
 
-export interface SQLStorage {
-    executeQuery<ResultType>(query: string, values?: any[]): Promise<ResultType[]>;
+export interface SQLStorage<ConnectionType> {
+    executeQuery<ResultType>(query: string, values: any[], options: SQLOptions<ConnectionType>): Promise<ResultType[]>;
 }
 
-export class ChangeSyncStorageSQL<DataType> extends ChangeSyncStorage<DataType> {
-    private sqlStorage: SQLStorage;
+export interface SQLOptions<ConnectionType> {
+    transactionConnection?: ConnectionType;
+}
 
-    constructor(sqlStorage: SQLStorage) {
+export class ChangeSyncStorageSQL<DataType, ConnectionType> extends ChangeSyncStorage<
+    DataType,
+    SQLOptions<ConnectionType>
+> {
+    private sqlStorage: SQLStorage<ConnectionType>;
+
+    constructor(sqlStorage: SQLStorage<ConnectionType>) {
         super();
 
         this.sqlStorage = sqlStorage;
     }
 
-    async initStorage(): Promise<void> {
+    async initStorage(options: SQLOptions<ConnectionType>): Promise<void> {
         await this.sqlStorage.executeQuery<void>(
             `create table if not exists changelog
              (
@@ -29,41 +36,68 @@ export class ChangeSyncStorageSQL<DataType> extends ChangeSyncStorage<DataType> 
              );
 
             create index changelog_type_index
-                on changelog (type);`
+                on changelog (type);`,
+            [],
+            options
         );
     }
 
-    async addChange(changeSyncType: string, changeType: ChangeType, data: DataType): Promise<void> {
-        await this.sqlStorage.executeQuery('INSERT INTO changelog (type, change_type, data) VALUES (?, ?, ?)', [
-            changeSyncType,
-            changeType,
-            JSON.stringify(data)
-        ]);
+    async addChange(
+        changeSyncType: string,
+        changeType: ChangeType,
+        data: DataType,
+        options: SQLOptions<ConnectionType>
+    ): Promise<void> {
+        await this.sqlStorage.executeQuery(
+            'INSERT INTO changelog (type, change_type, data) VALUES (?, ?, ?)',
+            [changeSyncType, changeType, JSON.stringify(data)],
+            options
+        );
     }
 
     async batchAddChange(
         changeSyncType: string,
-        changeList: { changeType: ChangeType; data: DataType }[]
+        changeList: { changeType: ChangeType; data: DataType }[],
+        options: SQLOptions<ConnectionType>
     ): Promise<void> {
         const sqlData = changeList.map((e) => [changeSyncType, e.changeType, JSON.stringify(e.data)]);
 
-        await this.sqlStorage.executeQuery<void>('INSERT INTO changelog (type, change_type, data) VALUES ?', [sqlData]);
-    }
-
-    async getPendingChanges(changeSyncType: string): Promise<StoredChangeEntry<DataType>[]> {
-        return await this.sqlStorage.executeQuery(
-            'SELECT id, change_type AS changeType, data FROM changelog WHERE type = ? AND received = FALSE AND resend_count < 5 ORDER BY created',
-            [changeSyncType]
+        await this.sqlStorage.executeQuery<void>(
+            'INSERT INTO changelog (type, change_type, data) VALUES ?',
+            [sqlData],
+            options
         );
     }
 
-    async saveChangeResults(changeSyncType: string, result: ChangeResultState, idList: number[]): Promise<void> {
+    async getPendingChanges(
+        changeSyncType: string,
+        options: SQLOptions<ConnectionType>
+    ): Promise<StoredChangeEntry<DataType>[]> {
+        return await this.sqlStorage.executeQuery(
+            'SELECT id, change_type AS changeType, data FROM changelog WHERE type = ? AND received = FALSE AND resend_count < 5 ORDER BY created',
+            [changeSyncType],
+            options
+        );
+    }
+
+    async saveChangeResults(
+        changeSyncType: string,
+        result: ChangeResultState,
+        idList: number[],
+        options: SQLOptions<ConnectionType>
+    ): Promise<void> {
         if (result == ChangeResultState.SUCCESSFUL) {
-            await this.sqlStorage.executeQuery('UPDATE changelog SET received = TRUE WHERE id IN ?', [[idList]]);
+            await this.sqlStorage.executeQuery(
+                'UPDATE changelog SET received = TRUE WHERE id IN ?',
+                [[idList]],
+                options || {}
+            );
         } else {
-            await this.sqlStorage.executeQuery('UPDATE changelog SET resend_count = resend_count + 1 WHERE id IN ?', [
-                [idList]
-            ]);
+            await this.sqlStorage.executeQuery(
+                'UPDATE changelog SET resend_count = resend_count + 1 WHERE id IN ?',
+                [[idList]],
+                options
+            );
         }
     }
 }

@@ -5,15 +5,15 @@ import { StatusResponse } from './ChangeSyncReceiver';
 
 const changeTypes = ['create', 'update', 'delete'];
 
-export type ChangeSyncOptions<DataType> = {
+export type ChangeSyncOptions<DataType, QueryOptions> = {
     type: string;
     apiFunction: (data: StoredChangeEntry<DataType>[]) => Promise<StatusResponse<DataType>>;
     syncCallback?: (syncResponse: StatusResponse<DataType>) => void;
     logger?: Logger;
-    syncStorage: ChangeSyncStorage<DataType>;
+    syncStorage: ChangeSyncStorage<DataType, QueryOptions>;
 };
 
-const defaultOptions: Partial<ChangeSyncOptions<unknown>> = {
+const defaultOptions: Partial<ChangeSyncOptions<unknown, unknown>> = {
     syncCallback: () => {},
     logger: new ConsoleLogger()
 };
@@ -23,14 +23,14 @@ export type ChangeEntry<DataType> = {
     data: DataType;
 };
 
-export class ChangeSync<DataType> {
+export class ChangeSync<DataType, QueryOptions> {
     private readonly type: string;
     private readonly apiFunction: (data: StoredChangeEntry<DataType>[]) => Promise<StatusResponse<DataType>>;
     private readonly syncCallback: (syncResponse: StatusResponse<DataType>) => void;
-    private readonly syncStorage: ChangeSyncStorage<DataType>;
+    private readonly syncStorage: ChangeSyncStorage<DataType, QueryOptions>;
     private readonly logger: Logger;
 
-    public constructor(options: ChangeSyncOptions<DataType>) {
+    public constructor(options: ChangeSyncOptions<DataType, QueryOptions>) {
         options = {
             ...defaultOptions,
             ...options
@@ -43,23 +43,25 @@ export class ChangeSync<DataType> {
         this.logger = options.logger!;
     }
 
-    public async initStorage(): Promise<void> {
-        await this.syncStorage.initStorage();
+    public async initStorage(options?: QueryOptions): Promise<void> {
+        await this.syncStorage.initStorage(options || {});
     }
 
-    async addChange(changeType: ChangeType, data: DataType): Promise<void> {
-        await this.syncStorage.addChange(this.type, changeType, data);
+    async addChange(changeType: ChangeType, data: DataType, options?: QueryOptions): Promise<void> {
+        await this.syncStorage.addChange(this.type, changeType, data, options || {});
 
         await this.syncChanges();
     }
 
     //TODO: Does this work with ordering by created timestamp?
     /**
+     *
      * Batch inserts changelog entries
      * @param entries an array with entries, each an object having a changeType and data
+     * @param options
      * @return {Promise<void>}
      */
-    async batchAddChange(entries: ChangeEntry<DataType>[]): Promise<void> {
+    async batchAddChange(entries: ChangeEntry<DataType>[], options?: QueryOptions): Promise<void> {
         for (let i = 0; i < entries.length; i++) {
             if (!entries[i].changeType || !changeTypes.includes(entries[i].changeType)) {
                 throw new Error('changeType has to be create, update or delete');
@@ -70,13 +72,16 @@ export class ChangeSync<DataType> {
             }
         }
 
-        await this.syncStorage.batchAddChange(this.type, entries);
+        await this.syncStorage.batchAddChange(this.type, entries, options || {});
 
         await this.syncChanges();
     }
 
-    async syncChanges(): Promise<void> {
-        const syncData = (await this.syncStorage.getPendingChanges(this.type)) as StoredChangeEntry<DataType>[];
+    async syncChanges(options?: QueryOptions): Promise<void> {
+        const syncData = (await this.syncStorage.getPendingChanges(
+            this.type,
+            options || {}
+        )) as StoredChangeEntry<DataType>[];
 
         if (syncData.length) {
             let syncResults: StatusResponse<DataType>;
@@ -101,11 +106,16 @@ export class ChangeSync<DataType> {
             const failedIds = syncResults.filter((r) => r.status >= 300).map((r) => r.id);
 
             if (successfulIds.length) {
-                await this.syncStorage.saveChangeResults(this.type, ChangeResultState.SUCCESSFUL, successfulIds);
+                await this.syncStorage.saveChangeResults(
+                    this.type,
+                    ChangeResultState.SUCCESSFUL,
+                    successfulIds,
+                    options || {}
+                );
             }
 
             if (failedIds.length) {
-                await this.syncStorage.saveChangeResults(this.type, ChangeResultState.FAILED, failedIds);
+                await this.syncStorage.saveChangeResults(this.type, ChangeResultState.FAILED, failedIds, options || {});
             }
         }
     }
