@@ -50,7 +50,7 @@ export class ChangeSync<DataType, QueryOptions> {
     async addChange(changeType: ChangeType, data: DataType, options?: QueryOptions): Promise<void> {
         await this.syncStorage.addChange(this.type, changeType, data, options || {});
 
-        await this.syncChanges();
+        await this.syncChanges(options);
     }
 
     //TODO: Does this work with ordering by created timestamp?
@@ -74,7 +74,7 @@ export class ChangeSync<DataType, QueryOptions> {
 
         await this.syncStorage.batchAddChange(this.type, entries, options || {});
 
-        await this.syncChanges();
+        await this.syncChanges(options);
     }
 
     async syncChanges(options?: QueryOptions): Promise<void> {
