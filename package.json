@@ -1,6 +1,6 @@
 {
     "name": "changesync",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "description": "Safely synchronize data between microservices with data resending",
     "author": {
         "name": "Moritz Hein",

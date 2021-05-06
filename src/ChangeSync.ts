@@ -89,6 +89,8 @@ export class ChangeSync<DataType, QueryOptions> {
             try {
                 syncResults = await this.apiFunction(syncData);
             } catch (err) {
+                this.logger.warn(`ChangeSync '${this.type}' api function error`, err);
+
                 const statusCode = err.response ? err.response.status : 500;
 
                 syncResults = syncData.map((d) => ({
